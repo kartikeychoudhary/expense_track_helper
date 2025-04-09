@@ -642,6 +642,8 @@ class _HomePageState extends State<HomePage> {
                                     Expanded(
                                       flex: 2, // Give button less space
                                       child: IconButton(
+                                        tooltip:
+                                            'Refresh sender list from device',
                                         icon:
                                             _isFetchingAllSenders
                                                 ? const SizedBox(
@@ -654,11 +656,12 @@ class _HomePageState extends State<HomePage> {
                                                 )
                                                 : const Icon(Icons.refresh),
                                         onPressed:
-                                            _isFetchingAllSenders
-                                                ? null
+                                            _isLoadingConfig ||
+                                                    _isFetchingAllSenders ||
+                                                    _isFetchingSms ||
+                                                    _isFetchingToken
+                                                ? null // Disable if any loading is happening
                                                 : _fetchAllSendersFromDevice,
-                                        tooltip:
-                                            'Refresh Sender List from Device',
                                       ),
                                     ),
                                   ],
@@ -804,86 +807,84 @@ class _HomePageState extends State<HomePage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Filter Dropdown
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12.0,
+                            // Time Filter Dropdown
+                            SizedBox(
+                              width: 150, // Give dropdown a fixed width
+                              child: DropdownButton<SmsTimeFilter>(
+                                isExpanded: true, // Allow dropdown to expand
+                                value: _selectedTimeFilter,
+                                // Show loading indicator if fetching SMS
+                                icon:
+                                    _isFetchingSms
+                                        ? const SizedBox(
+                                          width: 12, // Smaller indicator
+                                          height: 12,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : const Icon(Icons.arrow_drop_down),
+                                underline: Container(
+                                  height: 1,
+                                  color: Colors.grey, // Or your theme color
                                 ),
-                                // Removed explicit background color, let Card handle it
-                                // decoration: BoxDecoration(
-                                //   color: Theme.of(context).colorScheme.surfaceContainerLowest,
-                                //   borderRadius: BorderRadius.circular(4.0),
-                                // ),
-                                child: DropdownButtonHideUnderline(
-                                  // Hide default underline
-                                  child: DropdownButton<SmsTimeFilter>(
-                                    value: _selectedTimeFilter,
-                                    icon: const Icon(
-                                      Icons.filter_list,
-                                      size: 20,
-                                    ),
-                                    elevation: 8,
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(
-                                            context,
-                                          ).textTheme.bodyMedium?.color ??
-                                          Colors.black,
-                                      fontSize: 14,
-                                    ),
-                                    // underline: const SizedBox.shrink(), // Use DropdownButtonHideUnderline instead
-                                    isDense: true,
-                                    onChanged: (SmsTimeFilter? newValue) {
-                                      if (newValue != null &&
-                                          newValue != _selectedTimeFilter) {
-                                        setState(
-                                          () => _selectedTimeFilter = newValue,
-                                        );
-                                        _fetchSmsMessages();
-                                      }
-                                    },
-                                    items:
-                                        SmsTimeFilter.values.map<
-                                          DropdownMenuItem<SmsTimeFilter>
-                                        >((SmsTimeFilter value) {
-                                          return DropdownMenuItem<
-                                            SmsTimeFilter
-                                          >(
-                                            value: value,
-                                            child: Text(
-                                              value.displayName,
-                                              overflow:
-                                                  TextOverflow
-                                                      .ellipsis, // Prevent overflow
-                                            ),
-                                          );
-                                        }).toList(),
-                                  ),
-                                ),
+                                onChanged:
+                                    _isFetchingSms ||
+                                            _isLoadingConfig ||
+                                            _isFetchingAllSenders ||
+                                            _isFetchingToken
+                                        ? null // Disable dropdown during fetch
+                                        : (SmsTimeFilter? newValue) {
+                                          if (newValue != null) {
+                                            setState(() {
+                                              _selectedTimeFilter = newValue;
+                                            });
+                                            _fetchSmsMessages(); // Refetch with new filter
+                                          }
+                                        },
+                                items:
+                                    SmsTimeFilter.values.map<
+                                      DropdownMenuItem<SmsTimeFilter>
+                                    >((SmsTimeFilter value) {
+                                      return DropdownMenuItem<SmsTimeFilter>(
+                                        value: value,
+                                        child: Text(
+                                          value.displayName,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    }).toList(),
                               ),
                             ),
-                            // Fetch Button
-                            TextButton.icon(
-                              // style: flatRectangularButtonStyle, // Removed
+                            const Spacer(), // Pushes fetch button to the right
+                            // Fetch SMS Button
+                            ElevatedButton.icon(
+                              // Disable button if loading config, fetching token, fetching SMS, or fetching all senders
                               onPressed:
                                   _isLoadingConfig ||
                                           _isFetchingToken ||
-                                          _isFetchingSms ||
-                                          _isFetchingAllSenders
+                                          _isFetchingSms || // Disable if fetching SMS
+                                          _isFetchingAllSenders || // Disable if fetching senders
+                                          _selectedSenders
+                                              .isEmpty // Disable if no senders selected
                                       ? null
                                       : _fetchSmsMessages,
                               icon:
-                                  _isFetchingSms
+                                  _isFetchingSms // Show progress only when fetching SMS specifically
                                       ? const SizedBox(
                                         width: 18,
                                         height: 18,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
+                                          color:
+                                              Colors
+                                                  .white, // Color for contrast on button
                                         ),
                                       )
-                                      : const Icon(Icons.refresh),
-                              label: const Text('Fetch'), // Shortened label
+                                      : const Icon(
+                                        Icons.cloud_download_outlined,
+                                      ), // Changed icon
+                              label: const Text('Fetch SMS'), // Clearer label
                             ),
                           ],
                         ),
@@ -919,8 +920,8 @@ class _HomePageState extends State<HomePage> {
                                   final bool isAnyOperationRunning =
                                       _isLoadingConfig ||
                                       _isFetchingToken ||
-                                      _isFetchingSms ||
-                                      _isFetchingAllSenders;
+                                      _isFetchingSms || // Include SMS fetch status
+                                      _isFetchingAllSenders; // Include sender fetch status
 
                                   // Format the date
                                   String formattedDate = '';
