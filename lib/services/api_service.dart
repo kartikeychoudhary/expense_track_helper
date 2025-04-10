@@ -6,18 +6,20 @@ class ApiService {
     required String baseUrl,
     required String accessToken,
     required String smsBody,
+    required String formattedDate,
   }) async {
     final url = Uri.parse('$baseUrl/api/v1/genAi');
 
     try {
       final response = await http.post(
         url,
-        headers: { // Assuming backend expects JSON even for raw text? Check backend spec if text/plain is needed.
+        headers: {
+          // Assuming backend expects JSON even for raw text? Check backend spec if text/plain is needed.
           'Authorization': 'Bearer $accessToken',
         },
         // The spec says send raw text, but sending as JSON string for safety unless text/plain is confirmed.
         // If backend strictly expects raw text with text/plain header, adjust headers and body accordingly.
-        body: smsBody.toString(), // Sending the SMS body as a JSON string.
+        body: '$smsBody\n$formattedDate',
       );
 
       if (response.statusCode == 200) {

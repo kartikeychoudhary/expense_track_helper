@@ -446,12 +446,19 @@ class _HomePageState extends State<HomePage> {
           'Access token is not available. Please fetch token first.',
         );
       }
+      var formattedDate;
+      try {
+        formattedDate = 'SMS Received at: ${smsDateFormatter.format(sms.date!)}';
+      } catch (e) {
+        formattedDate = ''; // Handle potential formatting errors
+      }
 
       // Call API service
       await _apiService.sendSmsData(
         baseUrl: baseUrl,
         accessToken: accessToken,
         smsBody: sms.body!,
+        formattedDate: formattedDate,
       );
 
       // On Success:
