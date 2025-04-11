@@ -2,6 +2,8 @@
 
     <!-- Required SMS permission -->
     <uses-permission android:name="android.permission.READ_SMS"/>
+    <!-- Required Internet permission -->
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:label="expense_track_helper"

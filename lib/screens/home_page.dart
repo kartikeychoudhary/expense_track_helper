@@ -83,7 +83,7 @@ class _HomePageState extends State<HomePage> {
       // Load config first to get initial selected strings
       await _loadConfiguration();
       // Fetch all senders AND apply initial selection
-      await _fetchAllSendersFromDevice();
+      // await _fetchAllSendersFromDevice();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -448,7 +448,8 @@ class _HomePageState extends State<HomePage> {
       }
       var formattedDate;
       try {
-        formattedDate = 'SMS Received at: ${smsDateFormatter.format(sms.date!)}';
+        formattedDate =
+            'SMS Received at: ${smsDateFormatter.format(sms.date!)}';
       } catch (e) {
         formattedDate = ''; // Handle potential formatting errors
       }
